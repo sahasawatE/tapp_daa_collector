@@ -29,33 +29,48 @@ test.describe("apple auction", () => {
     await page.waitForTimeout(1000);
     await page.goto("https://www.appleauction.co.th/catalog");
 
-    await page.waitForTimeout(2000);
-    await page
-      .locator(
-        '//*[text()="การประมูล"]/parent::div/div[@class="button-select dropdown"]'
-      )
-      .click();
+    // await page.waitForTimeout(2000);
+    // await page
+    //   .locator(
+    //     '//*[text()="การประมูล"]/parent::div/div[@class="button-select dropdown"]'
+    //   )
+    //   .click();
+    // await page.waitForTimeout(1000);
+    // const auction_options = page.locator(
+    //   '//div[@id="ddl-auction"]/ul[@role="menu"]/li/span'
+    // );
+    // let auction_fields = await auction_options.evaluateAll(async (options) => {
+    //   return options.map((e) => e.getAttribute("data-value"));
+    // });
+    // auction_fields = auction_fields.splice(1);
+
+    const id = process.env.APPLE_ID_AUCTION || "";
+
     await page.waitForTimeout(1000);
-    const auction_options = page.locator(
-      '//div[@id="ddl-auction"]/ul[@role="menu"]/li/span'
-    );
-    let auction_fields = await auction_options.evaluateAll(async (options) => {
-      return options.map((e) => e.getAttribute("data-value"));
+    await page.goto(`https://www.appleauction.co.th/catalog/CR/${id}`);
+
+    const next_page = page.locator('//*[text()="›"]/parent::li');
+    await next_page.scrollIntoViewIfNeeded();
+    const next_page_class = await next_page.getAttribute("class");
+    await page.waitForTimeout(1000);
+    let clickable = !next_page_class?.includes("disabled");
+
+    let table_slt: any[] = [];
+
+    const table_img = await util.getImgModal();
+    const table_data = await page.locator("//tbody/tr").evaluateAll((rows) => {
+      return rows.map((cols) => {
+        const col = cols.querySelectorAll("td");
+        const text = Array.from(col, (data) => {
+          return data.innerText;
+        }).splice(2);
+        return text;
+      });
     });
-    auction_fields = auction_fields.splice(1);
 
-    for (let cr_id of auction_fields) {
-      await page.waitForTimeout(1000);
-      await page.goto(`https://www.appleauction.co.th/catalog/CR/${cr_id}`);
+    table_slt.push({ text: table_data, img: table_img });
 
-      const next_page = page.locator('//*[text()="›"]/parent::li');
-      await next_page.scrollIntoViewIfNeeded();
-      const next_page_class = await next_page.getAttribute("class");
-      await page.waitForTimeout(1000);
-      let clickable = !next_page_class?.includes("disabled");
-
-      let table_slt: any[] = [];
-
+    while (clickable) {
       const table_img = await util.getImgModal();
       const table_data = await page
         .locator("//tbody/tr")
@@ -71,30 +86,65 @@ test.describe("apple auction", () => {
 
       table_slt.push({ text: table_data, img: table_img });
 
-      while (clickable) {
-        const table_img = await util.getImgModal();
-        const table_data = await page
-          .locator("//tbody/tr")
-          .evaluateAll((rows) => {
-            return rows.map((cols) => {
-              const col = cols.querySelectorAll("td");
-              const text = Array.from(col, (data) => {
-                return data.innerText;
-              }).splice(2);
-              return text;
-            });
-          });
-
-        table_slt.push({ text: table_data, img: table_img });
-
-        await next_page.click();
-        const np = page.locator('//*[text()="›"]/parent::li');
-        const np_class = await np.getAttribute("class");
-        clickable = !np_class?.includes("disabled");
-      }
-      result[cr_id || "none"] = table_slt;
-      await page.waitForTimeout(1000);
+      await next_page.click();
+      const np = page.locator('//*[text()="›"]/parent::li');
+      const np_class = await np.getAttribute("class");
+      clickable = !np_class?.includes("disabled");
     }
+    result[id || "none"] = table_slt;
+    await page.waitForTimeout(1000);
+
+    // for (let cr_id of auction_fields) {
+    //   await page.waitForTimeout(1000);
+    //   await page.goto(`https://www.appleauction.co.th/catalog/CR/${cr_id}`);
+
+    //   const next_page = page.locator('//*[text()="›"]/parent::li');
+    //   await next_page.scrollIntoViewIfNeeded();
+    //   const next_page_class = await next_page.getAttribute("class");
+    //   await page.waitForTimeout(1000);
+    //   let clickable = !next_page_class?.includes("disabled");
+
+    //   let table_slt: any[] = [];
+
+    //   const table_img = await util.getImgModal();
+    //   const table_data = await page
+    //     .locator("//tbody/tr")
+    //     .evaluateAll((rows) => {
+    //       return rows.map((cols) => {
+    //         const col = cols.querySelectorAll("td");
+    //         const text = Array.from(col, (data) => {
+    //           return data.innerText;
+    //         }).splice(2);
+    //         return text;
+    //       });
+    //     });
+
+    //   table_slt.push({ text: table_data, img: table_img });
+
+    //   while (clickable) {
+    //     const table_img = await util.getImgModal();
+    //     const table_data = await page
+    //       .locator("//tbody/tr")
+    //       .evaluateAll((rows) => {
+    //         return rows.map((cols) => {
+    //           const col = cols.querySelectorAll("td");
+    //           const text = Array.from(col, (data) => {
+    //             return data.innerText;
+    //           }).splice(2);
+    //           return text;
+    //         });
+    //       });
+
+    //     table_slt.push({ text: table_data, img: table_img });
+
+    //     await next_page.click();
+    //     const np = page.locator('//*[text()="›"]/parent::li');
+    //     const np_class = await np.getAttribute("class");
+    //     clickable = !np_class?.includes("disabled");
+    //   }
+    //   result[cr_id || "none"] = table_slt;
+    //   await page.waitForTimeout(1000);
+    // }
 
     result = JSON.stringify(result);
 
@@ -102,6 +152,12 @@ test.describe("apple auction", () => {
       if (err) throw err;
       console.log("complete");
     });
+  });
+});
+
+test.describe("bug testing", () => {
+  test("img modal testing", async () => {
+    //https://www.appleauction.co.th/catalog/CR/6602UDN06061001
   });
 });
 
