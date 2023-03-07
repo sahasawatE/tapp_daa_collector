@@ -44,7 +44,7 @@ test.describe("apple auction", () => {
     // });
     // auction_fields = auction_fields.splice(1);
 
-    const id = process.env.APPLE_ID_AUCTION || "";
+    const id = "";
 
     await page.waitForTimeout(1000);
     await page.goto(`https://www.appleauction.co.th/catalog/CR/${id}`);
